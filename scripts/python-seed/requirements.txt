@@ -1,0 +1,2 @@
+cassandra-driver==3.29.0
+Faker==24.0.0

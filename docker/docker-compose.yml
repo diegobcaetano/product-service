@@ -1,0 +1,51 @@
+version: '3'
+services:
+  product-service:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ../:/app
+      - go-cache:/go/pkg/mod/cache
+    environment:
+      - GO_ENV=development
+    command: air
+    ports:
+      - "8080:8080"
+  cassandra:
+    image: cassandra:latest
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+  cassandra-init:
+    image: cassandra:latest
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ../scripts/python-seed/create-keyspace.cql:/docker-entrypoint-initdb.d/create-keyspace.cql
+    command: >
+      /bin/bash -c "
+      cqlsh cassandra -f /docker-entrypoint-initdb.d/create-keyspace.cql
+      "
+  # seeder:
+  #   build:
+  #     context: ../scripts/python-seed
+  #   depends_on:
+  #     cassandra:
+  #       condition: service_healthy
+  #   environment:
+  #     - CASSANDRA_HOST=cassandra
+  #     - CASSANDRA_PORT=9042
+volumes:
+  cassandra_data:
+  go-cache:

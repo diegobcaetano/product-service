@@ -1,0 +1,68 @@
+# # Estágio 1: Construir o executável.
+# FROM golang:1.22-alpine AS builder
+
+# # Instala o Git, necessário para baixar as dependências do Go.
+# # Aqui, combinamos a atualização e a instalação em um único comando RUN para simplificar e evitar camadas desnecessárias.
+# RUN apk add git
+
+# # Definir o diretório de trabalho atual dentro do container.
+# WORKDIR /app
+
+# # Copiar os arquivos 'go.mod' e se existir 'go.sum' e fazer download das dependências.
+# COPY go.* ./
+# RUN go mod download
+
+# # Copiar o resto dos arquivos do código fonte.
+# COPY . .
+
+# # Instalar o Air para hot reload.
+# RUN go install github.com/cosmtrek/air@latest
+
+# # Estágio 2: Configurar o ambiente de execução com hot reload.
+# FROM golang:1.22-alpine
+
+# WORKDIR /app
+
+# # Copiar o binário do Air e os arquivos necessários do estágio de construção.
+# COPY --from=builder /go/bin/air /usr/local/bin/air
+# COPY --from=builder /app /app
+
+# # Iniciar o Air para hot reload.
+# CMD ["air"]
+
+# Estágio 1: Construir o executável.
+FROM golang:1.22-alpine AS builder
+
+# Instala o Git, necessário para baixar as dependências do Go.
+RUN apk add --no-cache git
+
+# Instala o Delve para depuração.
+RUN go get github.com/go-delve/delve/cmd/dlv
+
+# Instalar o Air para hot reload.
+RUN go get github.com/cosmtrek/air@latest
+
+# Definir o diretório de trabalho atual dentro do container.
+WORKDIR /app
+
+# Copiar os arquivos 'go.mod' e 'go.sum' e fazer download das dependências.
+COPY go.* ./
+RUN go mod download
+
+# Copiar o resto dos arquivos do código fonte.
+COPY . .
+
+# Estágio 2: Configurar o ambiente de execução com hot reload e depuração.
+FROM golang:1.22-alpine
+
+# Copiar o código compilado do estágio de construção.
+COPY --from=builder /app /app
+
+# Definir o diretório de trabalho atual dentro do container.
+WORKDIR /app
+
+# Expor a porta de depuração usada pelo Delve.
+EXPOSE 2345
+
+# Iniciar o Air para hot reload e o servidor de depuração Delve.
+CMD ["air", "&&", "dlv", "debug", "--headless", "--listen=:2345", "--log", "--api-version=2", "--accept-multiclient", "exec", "/tmp/main"]

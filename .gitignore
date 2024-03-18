@@ -1,0 +1,30 @@
+# Arquivos de compilação
+*.o
+*.out
+*.exe
+
+# Arquivos binários
+bin/
+release/
+
+
+# Arquivos de configuração
+*.env
+*.toml
+
+# Arquivos de log e cache
+logs/
+.cache/
+
+# Arquivos de IDE
+.idea/
+.vscode/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Dependências do Go
+/vendor/
+
+**/tmp/
