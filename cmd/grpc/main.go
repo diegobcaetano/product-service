@@ -1,41 +1,42 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"net"
 
+	"github.com/diegobcaetano/product-service/internal/api/config"
+	"github.com/diegobcaetano/product-service/internal/logging"
 	pb "github.com/diegobcaetano/product-service/pkg/domain/grpc"
+	"github.com/diegobcaetano/product-service/pkg/handler"
+	repository "github.com/diegobcaetano/product-service/pkg/infrastructure/db"
+	"github.com/diegobcaetano/product-service/pkg/usecase"
 	"google.golang.org/grpc"
 )
 
-// server implementa grpc.ProductServiceServer
-type server struct{
-	pb.UnimplementedProductServiceServer
-}
-
-func (s *server) GetProductByID(ctx context.Context, req *pb.ProductByIDRequest) (*pb.ProductResponse, error) {
-	// Lógica para obter o produto com o ID fornecido
-	// Aqui você pode chamar sua lógica de negócios ou acessar o banco de dados, etc.
-
-	fmt.Printf("Server info %s", req.ProductId)
-	// Construa e retorne a resposta
-	return &pb.ProductResponse{
-		Product: &pb.Product{
-			Id: req.ProductId,
-		},
-	}, nil
-}
 
 func main() {
+
+	logger := logging.NewSlogAdapter()
+	env := config.NewEnvLoad(logger).Load("../../")
+	dbSession, err := repository.NewCassandraSession(env.GetConfig())
+	defer dbSession.Close()
+	if err != nil {
+		panic(err)
+	}
+	productRepository := repository.NewCassandraProductRepository(dbSession, logger)
+	var useCase usecase.ProductUseCase = usecase.NewProductService(productRepository)
+
 	// Inicialize o servidor gRPC
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterProductServiceServer(s, &server{})
+
+	pb.RegisterProductServiceServer(s, &handler.ProductGrpcServer{
+		UseCase: useCase,
+		Logger: logger,
+	})
 	log.Println("Server is running on port :50051")
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)

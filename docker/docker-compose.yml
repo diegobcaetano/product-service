@@ -12,9 +12,25 @@ services:
       - go-cache:/go/pkg/mod/cache
     environment:
       - GO_ENV=development
-    command: air
+    command: air -c .air-http.toml
     ports:
       - "8080:8080"
+      - "2345:2345"
+  product-service-grpc:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ../:/app
+      - go-cache:/go/pkg/mod/cache
+    environment:
+      - GO_ENV=development
+    command: air -c .air-grpc.toml
+    ports:
+      - "50051:50051"
   cassandra:
     image: cassandra:latest
     healthcheck:
@@ -49,3 +65,6 @@ services:
 volumes:
   cassandra_data:
   go-cache:
+networks:
+  fake-ecommerce:
+    driver: bridge
