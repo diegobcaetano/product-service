@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package product;
+
+option go_package = "github.com/diegobcaetano/product-service/pkg/domain/grpc";
+
+message Product {
+    string id = 1;
+    string name = 2;
+    repeated BuyOption buy_options = 3;
+    repeated string categories = 4;
+    map<string, string> custom_attributes = 5;
+    int64 created_at = 6;
+    bool is_blocked = 7;
+    repeated string images = 8;
+}
+
+message BuyOption {
+    string seller_id = 1;
+    uint32 price = 2;
+    uint32 promotional_discount = 3;
+    uint32 stock = 4;
+    string product_id = 5;
+}
+
+service ProductService {
+    rpc GetProductByID (ProductByIDRequest) returns (ProductResponse);
+}
+
+message ProductByIDRequest {
+    string product_id = 1;
+}
+
+message ProductResponse {
+    Product product = 1;
+}
