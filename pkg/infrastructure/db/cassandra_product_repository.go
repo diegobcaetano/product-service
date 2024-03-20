@@ -83,6 +83,22 @@ func (r *CassandraProductRepository) GetProductBuyOptionsByProductID(product_id 
 	return buyOptions, err
 }
 
+func (r *CassandraProductRepository) GetBuyOptionByProductIdAndSellerId(productID string, sellerID string) (model.BuyOption, error) {
+	buyOption := model.BuyOption{}
+	err := r.session.Query("SELECT seller_id, product_id, price, promotional_discount, stock "+
+		"FROM buy_options WHERE product_id = ? AND seller_id = ?", productID, sellerID).Scan(
+			&buyOption.SellerID,
+			&buyOption.ProductID,
+			&buyOption.Price,
+			&buyOption.PromotionalDiscount,
+			&buyOption.Stock)
+
+	if err != nil {
+		r.logger.Error(err.Error())
+	}
+	return buyOption, err
+}
+
 func (r *CassandraProductRepository) Create(product model.Product) (model.Product, error) {
 	product.ID = uuid.New().String()
 	product.CreatedAt = time.Now()

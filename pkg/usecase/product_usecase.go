@@ -10,6 +10,7 @@ import (
 type ProductUseCase interface {
 	GetProductByID(id string) (model.Product, error)
 	CreateProduct(product model.Product) (model.Product, error)
+	ProductHasStock(id string, sellerID string) (bool, error)
 }
 
 type ProductService struct {
@@ -28,6 +29,20 @@ func (s *ProductService) GetProductByID(id string) (model.Product, error) {
 		return model.Product{}, err
 	}
 	return s.SetDiscount(product)
+}
+
+func (s *ProductService) ProductHasStock(id string, sellerID string) (bool, error) {
+	result := false
+	buyOption, err := s.repository.GetBuyOptionByProductIdAndSellerId(id, sellerID)
+	if err != nil {
+		return result, err
+	}
+
+	if buyOption.Stock > 0 {
+		result = true
+	}
+
+	return result, nil
 }
 
 func (s *ProductService) CreateProduct(product model.Product) (model.Product, error) {

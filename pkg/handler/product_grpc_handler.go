@@ -7,6 +7,8 @@ import (
 	pb "github.com/diegobcaetano/product-service/pkg/domain/grpc"
 	model "github.com/diegobcaetano/product-service/pkg/domain/model/product"
 	"github.com/diegobcaetano/product-service/pkg/usecase"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type ProductGrpcServer struct{
@@ -33,5 +35,18 @@ func (s *ProductGrpcServer) GetProductByID(ctx context.Context, req *pb.ProductB
 
 	return &pb.ProductResponse{
 		Product: protoProduct,
+	}, nil
+}
+
+func (s *ProductGrpcServer) ProductHasStock(ctx context.Context, req *pb.ProductHasStockRequest) (*pb.ProductHasStockResponse, error) {
+
+	result, err := s.UseCase.ProductHasStock(req.GetProductId(),req.GetSellerId())
+	if err != nil {
+		s.Logger.Error("Something went wrong while fetching the product", "error", err.Error())
+		return nil, status.Errorf(codes.Internal, "Something went wrong while fetching the product stock: %v", err)
+	}
+
+	return &pb.ProductHasStockResponse{
+		Result: result,
 	}, nil
 }

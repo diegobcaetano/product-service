@@ -25,6 +25,7 @@ message BuyOption {
 
 service ProductService {
     rpc GetProductByID (ProductByIDRequest) returns (ProductResponse);
+    rpc ProductHasStock (ProductHasStockRequest) returns (ProductHasStockResponse);
 }
 
 message ProductByIDRequest {
@@ -33,4 +34,13 @@ message ProductByIDRequest {
 
 message ProductResponse {
     Product product = 1;
+}
+
+message ProductHasStockRequest {
+    string product_id = 1;
+    string seller_id = 2;
+}
+
+message ProductHasStockResponse {
+    bool result = 1;
 }
